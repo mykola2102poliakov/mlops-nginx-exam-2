@@ -1,4 +1,51 @@
 services:
+
+  api-v1-1:
+    build:
+      context: .
+      dockerfile: src/api/v1/Dockerfile
+    container_name: api-v1-1
+
+  api-v1-2:
+    build:
+      context: .
+      dockerfile: src/api/v1/Dockerfile
+    container_name: api-v1-2
+
+  api-v1-3:
+    build:
+      context: .
+      dockerfile: src/api/v1/Dockerfile
+    container_name: api-v1-3
+
+  api-v2:
+    build:
+      context: .
+      dockerfile: src/api/v2/Dockerfile
+    container_name: api-v2
+
+  nginx:
+    build:
+      context: ./deployments/nginx
+      dockerfile: Dockerfile
+    container_name: nginx-gateway
+    depends_on:
+      - api-v1-1
+      - api-v1-2
+      - api-v1-3
+      - api-v2
+    ports:
+      - "80:80"
+      - "443:443"
+
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:1.3.0
+    container_name: nginx_exporter
+    command:
+      - "--nginx.scrape-uri=http://nginx:8080/nginx_status"
+    depends_on:
+      - nginx
+
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus_server
@@ -8,7 +55,7 @@ services:
       - ./deployments/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     depends_on:
-      - nginx
+      - nginx-exporter
 
   grafana:
     image: grafana/grafana:latest
